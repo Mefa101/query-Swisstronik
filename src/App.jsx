@@ -89,12 +89,33 @@ function App() {
         URL.revokeObjectURL(url);
     };
 
+    const handleFileUpload = (event, type) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target.result;
+                if (type === 'contracts') {
+                    setContractInput(content);
+                } else if (type === 'transactions') {
+                    setTxHashInput(content);
+                }
+            } catch (error) {
+                console.error('Error reading file:', error.message);
+            }
+        };
+        reader.readAsText(file);
+    };
+
     return (
         <div className="App">
             <h1>Contract and Transaction Query</h1>
 
             <div className="container">
-                <h2>Query Contract Bytecode</h2>
+                <h2>Upload Contract Addresses File</h2>
+                <input type="file" accept=".json,.txt" onChange={(e) => handleFileUpload(e, 'contracts')} />
                 <textarea
                     rows="4"
                     cols="50"
@@ -102,13 +123,13 @@ function App() {
                     onChange={(e) => setContractInput(e.target.value)}
                     placeholder='Enter contract addresses as a list (comma-separated or JSON array)'
                 />
-                <div class="customized-button">
+                <div className="customized-button">
                     <button onClick={handleContractQuery} disabled={loading}>
                         {loading ? 'Loading...' : 'Query Bytecode'}
                     </button>
                     <div>
                         {bytecodes.map((item, index) => (
-                            <div class="result" key={index}>
+                            <div className="result" key={index}>
                                 <strong>Address:</strong> {item.address}<br /><br />
                                 <strong>Bytecode:</strong> <pre>{item.bytecode}</pre>
                             </div>
@@ -121,7 +142,8 @@ function App() {
             </div>
 
             <div className="container">
-                <h2>Query Transaction Receipt</h2>
+                <h2>Upload Transaction Hashes File</h2>
+                <input type="file" accept=".json,.txt" onChange={(e) => handleFileUpload(e, 'transactions')} />
                 <textarea
                     rows="4"
                     cols="50"
@@ -129,13 +151,13 @@ function App() {
                     onChange={(e) => setTxHashInput(e.target.value)}
                     placeholder='Enter transaction hashes as a list (comma-separated or JSON array)'
                 />
-                <div class="customized-button">
+                <div className="customized-button">
                     <button onClick={handleTxQuery} disabled={loading}>
                         {loading ? 'Loading...' : 'Query Transaction'}
                     </button>
                     <div>
                         {txDetails.map((item, index) => (
-                            <div class="result" key={index}>
+                            <div className="result" key={index}>
                                 <strong>Hash:</strong> {item.hash}<br />
                                 <br />
                                 <strong>Receipt:</strong> <pre>{JSON.stringify(item.receipt, null, 2)}</pre>
