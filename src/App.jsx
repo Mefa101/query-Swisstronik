@@ -6,14 +6,12 @@ function App() {
     const [txHashInput, setTxHashInput] = useState('');
     const [bytecodes, setBytecodes] = useState([]);
     const [txDetails, setTxDetails] = useState([]);
+    const [loading, setLoading] = useState(false);
 
-    // Replace with your JSON RPC URL
     const jsonRpcUrl = 'https://json-rpc.testnet.swisstronik.com';
 
-    // Parse the input text into an array
     const parseInput = (input) => {
         try {
-            // Parse JSON-like input or comma-separated list
             const parsedInput = JSON.parse(input);
             return Array.isArray(parsedInput) ? parsedInput : parsedInput.split(',').map(item => item.trim());
         } catch {
@@ -26,14 +24,15 @@ function App() {
         const addresses = parseInput(contractInput);
         const newBytecodes = [];
 
+        setLoading(true);
+
         for (const address of addresses) {
             if (!address) {
-                newBytecodes.push('Please enter a valid contract address.');
+                newBytecodes.push({ address, bytecode: 'Please enter a valid contract address.' });
                 continue;
             }
 
             try {
-                // Get the bytecode
                 const code = await provider.getCode(address);
 
                 if (code === '0x') {
@@ -47,6 +46,7 @@ function App() {
         }
 
         setBytecodes(newBytecodes);
+        setLoading(false);
     };
 
     const handleTxQuery = async () => {
@@ -54,14 +54,15 @@ function App() {
         const hashes = parseInput(txHashInput);
         const newTxDetails = [];
 
+        setLoading(true);
+
         for (const hash of hashes) {
             if (!hash) {
-                newTxDetails.push('Please enter a valid transaction hash.');
+                newTxDetails.push({ hash, receipt: 'Please enter a valid transaction hash.' });
                 continue;
             }
 
             try {
-                // Get the transaction receipt
                 const receipt = await provider.getTransactionReceipt(hash);
 
                 if (receipt) {
@@ -75,6 +76,7 @@ function App() {
         }
 
         setTxDetails(newTxDetails);
+        setLoading(false);
     };
 
     const downloadJson = (data, filename) => {
@@ -90,8 +92,8 @@ function App() {
     return (
         <div className="App">
             <h1>Contract and Transaction Query</h1>
-            
-            <div>
+
+            <div className="container">
                 <h2>Query Contract Bytecode</h2>
                 <textarea
                     rows="4"
@@ -100,12 +102,25 @@ function App() {
                     onChange={(e) => setContractInput(e.target.value)}
                     placeholder='Enter contract addresses as a list (comma-separated or JSON array)'
                 />
-                <button onClick={handleContractQuery}>Query Bytecode</button>
-                <pre>{JSON.stringify(bytecodes, null, 2)}</pre>
-                <button onClick={() => downloadJson({ contracts: bytecodes }, 'contracts.json')}>Download Bytecode JSON</button>
+                <div class="customized-button">
+                    <button onClick={handleContractQuery} disabled={loading}>
+                        {loading ? 'Loading...' : 'Query Bytecode'}
+                    </button>
+                    <div>
+                        {bytecodes.map((item, index) => (
+                            <div class="result" key={index}>
+                                <strong>Address:</strong> {item.address}<br /><br />
+                                <strong>Bytecode:</strong> <pre>{item.bytecode}</pre>
+                            </div>
+                        ))}
+                    </div>
+                    <button onClick={() => downloadJson({ contracts: bytecodes }, 'contracts.json')} disabled={loading}>
+                        Download Bytecode JSON
+                    </button>
+                </div>
             </div>
 
-            <div>
+            <div className="container">
                 <h2>Query Transaction Receipt</h2>
                 <textarea
                     rows="4"
@@ -114,9 +129,23 @@ function App() {
                     onChange={(e) => setTxHashInput(e.target.value)}
                     placeholder='Enter transaction hashes as a list (comma-separated or JSON array)'
                 />
-                <button onClick={handleTxQuery}>Query Transaction</button>
-                <pre>{JSON.stringify(txDetails, null, 2)}</pre>
-                <button onClick={() => downloadJson({ transactions: txDetails }, 'transactions.json')}>Download Transactions JSON</button>
+                <div class="customized-button">
+                    <button onClick={handleTxQuery} disabled={loading}>
+                        {loading ? 'Loading...' : 'Query Transaction'}
+                    </button>
+                    <div>
+                        {txDetails.map((item, index) => (
+                            <div class="result" key={index}>
+                                <strong>Hash:</strong> {item.hash}<br />
+                                <br />
+                                <strong>Receipt:</strong> <pre>{JSON.stringify(item.receipt, null, 2)}</pre>
+                            </div>
+                        ))}
+                    </div>
+                    <button onClick={() => downloadJson({ transactions: txDetails }, 'transactions.json')} disabled={loading}>
+                        Download Transactions JSON
+                    </button>
+                </div>
             </div>
         </div>
     );
